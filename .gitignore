@@ -1,0 +1,41 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+/vue3/node_modules
+.DS_Store
+/vue3/dist
+/vue3/dist-ssr
+/vue3/coverage
+/vue3/*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+*.tsbuildinfo
+
+.eslintcache
+
+# Cypress
+/cypress/videos/
+/cypress/screenshots/
+
+# Vitest
+/vue3/__screenshots__/
+
+# Vite
+/vue3/*.timestamp-*-*.mjs
+
+# fastapi_app
