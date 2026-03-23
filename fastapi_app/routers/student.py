@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from fastapi.params import Body, Path, Query
 from tortoise.contrib.pydantic import pydantic_model_creator
 from datetime import datetime
+from tortoise.expressions import Q
 
 from models import Student,StudentResponse
 
@@ -20,6 +21,7 @@ Student_Pydantic = pydantic_model_creator(Student, name="Student")
 async def select_all(
     page: int = Query(1, description="当前页码", ge=1),
     size: int = Query(10, description="每页显示数量", ge=1, le=100),
+    search: str = Query("", description="搜索关键词"),
 ):
     """
     查询所有学生信息
@@ -36,12 +38,22 @@ async def select_all(
     """
     # 计算偏移量
     offset = (page - 1) * size
+     # 构建查询条件：如果有搜索关键词，模糊匹配学号或姓名
+    query = Student.all()
+    if search.strip():  # 去除空格，避免空字符串查询
+        # 模糊查询逻辑（Tortoise ORM 语法）
+        # contains: 包含关键词（不区分大小写，根据数据库配置）
+        # 同时匹配学号（数字转字符串匹配）和姓名
+        query = query.filter(
+            # Q对象实现 或 条件：学号包含 或 姓名包含
+             Q(no__icontains=search) | Q(name__icontains=search)
+        )
 
     # 查询总数
-    total = await Student.all().count()
+    total = await query.count()
 
     # 分页查询
-    stu_list = await Student.all().offset(offset).limit(size)
+    stu_list = await query.offset(offset).limit(size)
 
     # 计算总页数
     total_pages = (total + size - 1) // size

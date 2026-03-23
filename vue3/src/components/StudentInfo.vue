@@ -4,7 +4,7 @@
     <!-- 搜索框 -->
     <div style="width: 70%;margin: 30px auto;">
       <div style="margin-bottom: 20px;">
-        <el-input v-model="searchValue" placeholder="请输入内容" style="width: 300px; margin-right: 20px;" />
+        <el-input v-model="searchValue" placeholder="请输入学号/姓名" style="width: 300px; margin-right: 20px;" />
         <el-button type="primary" @click="handleSearch">搜索</el-button>
         <el-button type="default" @click="handleReset">重置</el-button>
         <el-button type="primary" @click="handleAdd">新增</el-button>
@@ -70,11 +70,17 @@ const loading = ref(false)
 // 搜索
 const handleSearch = () => {
   console.log('search', searchValue.value)
+  fetchStudents({
+    page: pager.value.page,
+    size: pager.value.size,
+    search: searchValue.value
+  })
 }
 
 // 重置
 const handleReset = () => {
   searchValue.value = ''
+  fetchStudents()
 }
 
 // 新增学生信息
@@ -93,13 +99,12 @@ const handleDelete = (row: any) => {
 }
 
 // 获取学生列表
-const fetchStudents = async () => {
+const fetchStudents = async (query?: any) => {
   loading.value = true;
   try {
     // 使用配置好的 request 实例
-    const data = await getStudentInfo();
-    tableData.value = data;
-    console.log('获取到学生数据:', data);
+    const data =!!query? await getStudentInfo(query): await getStudentInfo();
+    tableData.value = data.data;
   } catch (error) {
     console.error('获取学生列表失败:', error);
   } finally {
