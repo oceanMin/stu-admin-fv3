@@ -2,7 +2,7 @@ from tortoise import fields,models
 from pydantic import BaseModel
 
 class Student(models.Model):
-    id = fields.IntField(pk=True, description="用户ID，主键")
+    id = fields.IntField(pk=True,generated=True, description="用户ID，主键")
     no=fields.CharField(max_length=255,null=True)
     name=fields.CharField(max_length=255,null=True)
     clazz=fields.CharField(max_length=255,null=True)
@@ -19,8 +19,7 @@ class Student(models.Model):
 # 添加 Pydantic 模型用于数据返回
 class StudentResponse(BaseModel):
     """返回给前端的 Student 数据结构"""
-    id: int
-    no: str | None = None
+    no: str | int | None = None
     name: str | None = None
     clazz: str | None = None
     major: str | None = None
