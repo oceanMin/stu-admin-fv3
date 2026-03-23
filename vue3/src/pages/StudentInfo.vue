@@ -19,9 +19,9 @@
         </template>
       </ProTable>
       <div style="display: flex;justify-content: end; margin-top: 20px;">
-        <el-pagination background layout="prev, pager, next" @current-change="handleCurrentChange"
+        <el-pagination background layout="total,prev, pager, next" @current-change="handleCurrentChange"
           @size-change="handleSizeChange" :current-page="pagination.currentPage" :page-size="pagination.pageSize"
-          :total="pagination.total"></el-pagination>
+          :total="pagination.total" ></el-pagination>
       </div>
     </div>
     <FormDialog v-model:visible="showDialog" :title="dialogTitle" :fields="formFields" :initial-data="formData"
@@ -52,7 +52,7 @@ const columns = [
 
 const pagination = ref({
   currentPage: 1,
-  pageSize: 100,
+  pageSize: 10,
   pageSizes: [10, 20, 50, 100],
   total: 0
 })
@@ -105,7 +105,7 @@ const handleReset = () => {
 
 // 切换页码
 const handleCurrentChange = (val: number) => {
-  console.log('current change', val)
+  pagination.value.currentPage = val
   fetchStudents({
     page: val,
     size: pagination.value.pageSize,
@@ -114,7 +114,7 @@ const handleCurrentChange = (val: number) => {
 }
 // 改变每页显示数量
 const handleSizeChange = (val: number) => {
-  console.log('size change', val)
+  pagination.value.pageSize = val
   fetchStudents({
     page: pagination.value.currentPage,
     size: val,
@@ -179,8 +179,10 @@ const fetchStudents = async (query?: any) => {
   loading.value = true;
   try {
     // 使用配置好的 request 实例
-    const data = !!query ? await getStudentInfo(query) : await getStudentInfo();
-    tableData.value = data.data;
+    const res = !!query ? await getStudentInfo(query) : await getStudentInfo();
+    const { data ,pages} = res;
+    tableData.value = data;
+    pagination.value.total = pages.total
   } catch (error) {
     console.error('获取学生列表失败:', error);
   } finally {
