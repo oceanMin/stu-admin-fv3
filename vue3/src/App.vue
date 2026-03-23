@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import StudentInfo from './components/StudentInfo.vue'
+import StudentInfo from './pages/StudentInfo.vue'
 </script>
 
 <template>

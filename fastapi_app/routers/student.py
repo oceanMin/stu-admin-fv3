@@ -4,7 +4,7 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 from datetime import datetime
 from tortoise.expressions import Q
 
-from models import Student,StudentResponse
+from models import Student, StudentResponse
 
 # 创建 APIRouter 实例
 student_router = APIRouter()
@@ -38,7 +38,7 @@ async def select_all(
     """
     # 计算偏移量
     offset = (page - 1) * size
-     # 构建查询条件：如果有搜索关键词，模糊匹配学号或姓名
+    # 构建查询条件：如果有搜索关键词，模糊匹配学号或姓名
     query = Student.all()
     if search.strip():  # 去除空格，避免空字符串查询
         # 模糊查询逻辑（Tortoise ORM 语法）
@@ -46,7 +46,8 @@ async def select_all(
         # 同时匹配学号（数字转字符串匹配）和姓名
         query = query.filter(
             # Q对象实现 或 条件：学号包含 或 姓名包含
-             Q(no__icontains=search) | Q(name__icontains=search)
+            Q(no__icontains=search)
+            | Q(name__icontains=search)
         )
 
     # 查询总数
@@ -91,14 +92,15 @@ async def select_one(student_id: int = Path(..., description="学生ID")):
     }
 
 
-@student_router.post("/student/createStuInfo",
-                     summary="新增学生信息",
-                     description="创建新的学生信息",
-                     response_description="返回创建成功的学生信息"
+@student_router.post(
+    "/student/createStuInfo",
+    summary="新增学生信息",
+    description="创建新的学生信息",
+    response_description="返回创建成功的学生信息",
 )
 async def createStuInfo(student: StudentResponse = Body(..., description="学生信息")):
     """新增学生信息"""
-    print('*'*20,student)
+    print("*" * 20, student)
     stu = await Student.create(**student.dict(exclude_unset=True))
     return {
         "message": "新增成功",
@@ -110,26 +112,23 @@ async def createStuInfo(student: StudentResponse = Body(..., description="学生
     }
 
 
-@student_router.post("/student/update",
-                    summary="更新学生信息",
-                    description="根据ID更新指定学生的信息",
-                     response_description="返回更新成功后的学生信息"
+@student_router.post(
+    "/student/update",
+    summary="更新学生信息",
+    description="根据ID更新指定学生的信息",
+    response_description="返回更新成功后的学生信息",
 )
-async def update(student: Student_Pydantic=Body(..., description="学生信息")):
+async def update(student: StudentResponse = Body(..., description="学生信息")):
     """更新学生信息"""
+    print("*" * 20, student)
     # 1. 校验ID是否存在（Pydantic 模型如果id是必填，这里其实可以省略，FastAPI会自动校验）
     if not student.id:
-        return {
-            "message": "缺少ID",
-            "status": 400,
-            "success": False,
-            "code": 400
-        }
+        return {"message": "缺少ID", "status": 400, "success": False, "code": 400}
     stu = await Student.get_or_none(id=student.id)
     if not stu:
         return "没有该学生"
     # 更新时候，排除id字段
-    update_data = student.dict(exclude_unset=True,exclude={"id"})
+    update_data = student.dict(exclude_unset=True, exclude={"id"})
     await Student.filter(id=student.id).update(**update_data)
     data = await Student.get(id=student.id)
     return {
@@ -142,10 +141,11 @@ async def update(student: Student_Pydantic=Body(..., description="学生信息")
     }
 
 
-@student_router.delete("/student/delete/{student_id}",
-                       summary="删除学生信息",
-                       description="根据ID删除指定学生的信息",
-                       response_description="返回删除成功"
+@student_router.delete(
+    "/student/delete/{student_id}",
+    summary="删除学生信息",
+    description="根据ID删除指定学生的信息",
+    response_description="返回删除成功",
 )
 async def delete(student_id: int = Path(..., description="学生ID")):
     """删除学生信息"""
