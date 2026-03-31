@@ -6,6 +6,7 @@ from tortoise.contrib.fastapi import register_tortoise
 
 from settings import TORTOISE_ORM
 from routers.student import student_router
+from routers.user import user_router
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -27,6 +28,7 @@ API_PREFIX = "/api/v1"
 
 # 注册路由
 app.include_router(student_router, prefix=API_PREFIX)
+app.include_router(user_router, prefix=API_PREFIX)
 
 # 注册 Tortoise-ORM
 register_tortoise(

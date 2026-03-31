@@ -1,8 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.params import Body, Path, Query
+from fastapi.responses import JSONResponse
 from tortoise.contrib.pydantic import pydantic_model_creator
 from datetime import datetime
 from tortoise.expressions import Q
+from jose import JWTError, jwt
+from utils import SECRET_KEY, ALGORITHM
 
 from models import Student, StudentResponse
 
@@ -11,6 +14,21 @@ student_router = APIRouter()
 # 创建 Pydantic 模型
 Student_Pydantic = pydantic_model_creator(Student, name="Student")
 
+async def get_current_user(token: str = Header(None)):
+    if not token:
+        # 替换HTTPException为JSONResponse，返回统一格式
+        return JSONResponse(
+            status_code=401,
+            content={"code": 401, "message": "未登录，请先登录", "data": []}
+        )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return JSONResponse(
+            status_code=401,
+            content={"code": 401, "message": "登录已过期，请重新登录", "data": []}
+        )
 
 @student_router.get(
     "/student/selectAll",
@@ -22,6 +40,7 @@ async def select_all(
     page: int = Query(1, description="当前页码", ge=1),
     size: int = Query(10, description="每页显示数量", ge=1, le=100),
     search: str = Query("", description="搜索关键词"),
+    user: dict = Depends(get_current_user)
 ):
     """
     查询所有学生信息

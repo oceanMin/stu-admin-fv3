@@ -36,6 +36,12 @@ import ProTable from '@/components/ProTable.vue'
 import FormDialog from '@/components/FormDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+type StudentQueryParams = {
+  page: number,
+  size: number,
+  search: string
+}
+
 const columns = [
   { type: 'index', width: 60, align: 'center' },
   { label: 'ID', prop: 'id' },
@@ -175,16 +181,29 @@ const handleDelete = async (row: any) => {
 }
 
 // 获取学生列表
-const fetchStudents = async (query?: any) => {
+const fetchStudents = async (query?: StudentQueryParams) => {
   loading.value = true;
   try {
-    // 使用配置好的 request 实例
-    const res = !!query ? await getStudentInfo(query) : await getStudentInfo();
-    const { data ,pages} = res;
-    tableData.value = data;
-    pagination.value.total = pages.total
+    const data = query ? await getStudentInfo(query) : await getStudentInfo();
+    if (data && data.code === 200) {
+      tableData.value = data.data || []; // 兜底空数组
+      // 分页数据兜底
+      pagination.value = {
+        ...pagination.value,
+        total: data.pages?.total || 0,
+        currentPage: data.pages?.current || 1,
+        pageSize: data.pages?.size || 10,
+        pageSizes: data.pages?.pages || 0
+      };
+    } else {
+      ElMessage.error(data?.message || "获取学生列表失败");
+      tableData.value = []; // 失败时清空列表
+    }
   } catch (error) {
+    // 捕获请求异常（如网络错误、401/500等）
     console.error('获取学生列表失败:', error);
+    ElMessage.error("网络异常或接口未响应，请检查后端服务");
+    tableData.value = []; // 异常时清空列表
   } finally {
     loading.value = false;
   }
