@@ -25,6 +25,9 @@ request.interceptors.request.use(
 // 响应拦截器：统一处理响应
 request.interceptors.response.use(
     response => {
+        if (response.config.responseType === 'blob') {
+            return response.data
+        }
         // 直接返回后端的完整响应数据，不做任何覆盖/修改
         const res = response.data
         // 只做状态码判断，不修改数据结构
@@ -40,6 +43,6 @@ request.interceptors.response.use(
         return Promise.reject(error)
     }
 )
-  
+
 
 export default request;

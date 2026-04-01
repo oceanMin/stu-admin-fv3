@@ -1,15 +1,28 @@
 <template>
   <div>
     <h1 style="text-align: center;margin-bottom: 50; font-size: 28px;">学生信息管理页面（增删查改）</h1>
-    <!-- 搜索框 -->
+    <!-- 搜索框 + 导入导出按钮 -->
     <div style="width: 70%;margin: 30px auto;">
       <ProTable :columns="columns" :table-data="tableData" :loading="loading" @refresh="handleSearch">
         <template #toolbar-left>
-          <div style="margin-bottom: 20px;">
-            <el-input v-model="searchValue" placeholder="请输入学号/姓名" style="width: 300px; margin-right: 20px;" />
+          <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <el-input v-model="searchValue" placeholder="请输入学号/姓名" style="width: 300px;" />
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button type="default" @click="handleReset">重置</el-button>
             <el-button type="success" @click="handleAdd">新增</el-button>
+            <!-- 🔥 新增：Excel 导出按钮 -->
+            <el-button type="primary" icon="Download" @click="handleExport">导出 Excel</el-button>
+            <!-- 🔥 新增：Excel 导入按钮 -->
+            <el-upload
+              class="upload-btn"
+              action="#"
+              :auto-upload="false"
+              :on-change="handleFileChange"
+              :show-file-list="false"
+              accept=".xlsx,.xls"
+            >
+              <el-button type="warning" icon="Upload">导入 Excel</el-button>
+            </el-upload>
           </div>
         </template>
         <!-- 自定义操作列 -->
@@ -31,7 +44,8 @@
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
-import { getStudentInfo, addStudentInfo, updateStudentInfo, deleteStudentInfo } from '@/api/student'
+import { getStudentInfo, addStudentInfo, updateStudentInfo, 
+  deleteStudentInfo, exportStudents, importStudents  } from '@/api/student'
 import ProTable from '@/components/ProTable.vue'
 import FormDialog from '@/components/FormDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -68,6 +82,9 @@ const tableData = ref<any[]>([])
 const loading = ref(false)
 const showDialog = ref(false)
 const formData = ref<any>({})
+// 🔥 新增：存储选中的导入文件
+const selectedFile = ref<File | null>(null)
+
 const customRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -209,7 +226,83 @@ const fetchStudents = async (query?: StudentQueryParams) => {
   }
 };
 
+// 🔥 新增：Excel 导出功能
+const handleExport = async () => {
+  try {
+    ElMessageBox.confirm('确定要导出当前学生列表数据吗？', '导出提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    }).then(async () => {
+      loading.value = true
+      const res = await exportStudents()
+      // 创建下载链接
+      const blob = new Blob([res], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `学生信息表_${new Date().getTime()}.xlsx`
+      a.click()
+      // 释放 URL 对象
+      window.URL.revokeObjectURL(url)
+      ElMessage.success('Excel 导出成功！')
+      loading.value = false
+    })
+  } catch (error) {
+    loading.value = false
+    console.error('Excel 导出失败:', error)
+    ElMessage.error('Excel 导出失败，请重试！')
+  }
+}
+
+// 🔥 新增：选择 Excel 文件
+const handleFileChange = (file: any) => {
+  selectedFile.value = file.raw
+  // 选择文件后触发导入确认
+  handleImport()
+}
+
+// 🔥 新增：Excel 导入功能
+const handleImport = async () => {
+  if (!selectedFile.value) {
+    ElMessage.warning('请选择要导入的 Excel 文件（仅支持 .xlsx/.xls 格式）')
+    return
+  }
+
+  try {
+    ElMessageBox.confirm('确定要导入该 Excel 文件吗？导入后会批量新增学生数据', '导入提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(async () => {
+      loading.value = true
+      const res = await importStudents(selectedFile.value!)
+      if (res.code === 200) {
+        ElMessage.success(res.message || 'Excel 导入成功！')
+        // 导入成功后刷新列表
+        fetchStudents()
+      } else {
+        ElMessage.error(res.message || 'Excel 导入失败！')
+      }
+      loading.value = false
+    })
+  } catch (error) {
+    loading.value = false
+    console.error('Excel 导入失败:', error)
+    ElMessage.error('Excel 导入失败，请检查文件格式！')
+  }
+}
+
 onMounted(() => {
   fetchStudents()
 })
 </script>
+
+<style scoped>
+/* 🔥 新增：导入按钮样式适配 */
+.upload-btn {
+  display: inline-block;
+}
+</style>
