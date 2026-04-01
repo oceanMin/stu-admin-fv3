@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from models import User
 from schemas import UserCreate
-from utils import get_password_hash, verify_password, create_access_token,ACCESS_TOKEN_EXPIRE_MINUTES
-from datetime import datetime, timedelta
+from utils.utils import get_password_hash, verify_password, create_access_token,ACCESS_TOKEN_EXPIRE_MINUTES
+from datetime import timedelta
 
 user_router = APIRouter(prefix="/api/v1/user", tags=["用户模块"])
 

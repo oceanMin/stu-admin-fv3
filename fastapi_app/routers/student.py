@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from urllib.parse import quote
+from fastapi import APIRouter, Depends, File, HTTPException, Header, UploadFile
 from fastapi.params import Body, Path, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from tortoise.contrib.pydantic import pydantic_model_creator
 from datetime import datetime
 from tortoise.expressions import Q
 from jose import JWTError, jwt
-from utils import SECRET_KEY, ALGORITHM
+from utils.utils import SECRET_KEY, ALGORITHM
+from utils.excel_utils import export_students_to_excel, import_students_from_excel
 
 from models import Student, StudentResponse
 
@@ -29,6 +31,30 @@ async def get_current_user(token: str = Header(None)):
             status_code=401,
             content={"code": 401, "message": "登录已过期，请重新登录", "data": []}
         )
+
+# 🔥 新增：Excel 导出接口
+@student_router.get("/student/export")
+async def export_students():
+    try:
+        excel_file = await export_students_to_excel()
+        # 🔥 关键：中文文件名必须用 quote 编码，避免 latin-1 编码崩溃
+        filename = quote("学生信息表.xlsx")
+        return StreamingResponse(
+            excel_file,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename*=utf-8''{filename}"
+            }
+        )
+    except Exception as e:
+        print(f"导出失败：{str(e)}")
+        raise HTTPException(status_code=500, detail=f"导出失败：{str(e)}")
+
+# 🔥 新增：Excel 导入接口
+@student_router.post("/student/import")
+async def import_students(file: UploadFile = File(...)):
+    result = await import_students_from_excel(file)
+    return result
 
 @student_router.get(
     "/student/selectAll",
