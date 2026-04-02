@@ -38,11 +38,12 @@ export function deleteStudentInfo(stu_id:string): Promise<any> {
 }
 
 // Excel 导出
-export const exportStudents = () => {
+export const exportStudents = (params?: any) => {
   return request({
     url: '/student/export',
     method: 'get',
-    responseType: 'blob'  // 关键：指定响应类型为 blob
+    responseType: 'blob',  // 关键：指定响应类型为 blob
+    params
   })
 }
 

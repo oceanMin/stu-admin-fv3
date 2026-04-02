@@ -32,22 +32,47 @@ async def get_current_user(token: str = Header(None)):
             content={"code": 401, "message": "登录已过期，请重新登录", "data": []}
         )
 
-# 🔥 新增：Excel 导出接口
+# Excel 导出接口
 @student_router.get("/student/export")
-async def export_students():
+async def export_students(search: str = None):
     try:
-        excel_file = await export_students_to_excel()
-        # 🔥 关键：中文文件名必须用 quote 编码，避免 latin-1 编码崩溃
+        query = Student.all()
+
+        # 🔥 关键：有搜索关键词就过滤
+        if search:
+            query = query.filter(
+                Q(name__icontains=search) | Q(no__icontains=search)
+            )
+
+        # 查询过滤后的数据
+        students = await query.values(
+            "id", "no", "name", "clazz", "major", "college", "phone", "email", "address"
+        )
+
+        if not students:
+            raise HTTPException(status_code=400, detail="没有符合条件的数据")
+
+        import pandas as pd
+        from io import BytesIO
+
+        df = pd.DataFrame(students)
+        df = df[["id", "no", "name", "clazz", "major", "college", "phone", "email", "address"]]
+        df.columns = ["ID", "学号", "姓名", "班级", "专业", "学院", "手机号", "邮箱", "地址"]
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, sheet_name="学生信息", index=False)
+        output.seek(0)
+
+        from urllib.parse import quote
         filename = quote("学生信息表.xlsx")
+
         return StreamingResponse(
-            excel_file,
+            output,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={
-                "Content-Disposition": f"attachment; filename*=utf-8''{filename}"
-            }
+            headers={"Content-Disposition": f"attachment; filename*=utf-8''{filename}"}
         )
     except Exception as e:
-        print(f"导出失败：{str(e)}")
         raise HTTPException(status_code=500, detail=f"导出失败：{str(e)}")
 
 # 🔥 新增：Excel 导入接口

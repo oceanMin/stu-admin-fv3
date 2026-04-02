@@ -226,34 +226,36 @@ const fetchStudents = async (query?: StudentQueryParams) => {
   }
 };
 
-// 🔥 新增：Excel 导出功能
+// Excel 导出功能
 const handleExport = async () => {
   try {
-    ElMessageBox.confirm('确定要导出当前学生列表数据吗？', '导出提示', {
+    ElMessageBox.confirm('确定要导出当前筛选的学生数据吗？', '导出提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'info'
     }).then(async () => {
       loading.value = true
-      const res = await exportStudents()
-      // 创建下载链接
-      const blob = new Blob([res], { 
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+
+      // 🔥 关键：把当前搜索值一起传给后端
+      const res:any = await exportStudents({
+        search: searchValue.value
+      })
+
+      const blob = new Blob([res], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `学生信息表_${new Date().getTime()}.xlsx`
       a.click()
-      // 释放 URL 对象
       window.URL.revokeObjectURL(url)
-      ElMessage.success('Excel 导出成功！')
+      ElMessage.success('导出成功！')
       loading.value = false
     })
   } catch (error) {
     loading.value = false
-    console.error('Excel 导出失败:', error)
-    ElMessage.error('Excel 导出失败，请重试！')
+    ElMessage.error('导出失败')
   }
 }
 
