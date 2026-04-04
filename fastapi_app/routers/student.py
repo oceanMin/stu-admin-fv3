@@ -2,12 +2,13 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, File, HTTPException, Header, UploadFile
 from fastapi.params import Body, Path, Query
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel
 from tortoise.contrib.pydantic import pydantic_model_creator
 from datetime import datetime
 from tortoise.expressions import Q
 from jose import JWTError, jwt
 from utils.utils import SECRET_KEY, ALGORITHM
-from utils.excel_utils import export_students_to_excel, import_students_from_excel
+from utils.excel_utils import  import_students_from_excel
 
 from models import Student, StudentResponse
 
@@ -230,3 +231,17 @@ async def delete(student_id: int = Path(..., description="学生ID")):
         "code": 200,
         "timestamp": datetime.now().__format__("%Y-%m-%d %H:%M:%S"),
     }
+
+# 定义请求体模型，匹配前端传的 { ids: [1,2,3] } 格式
+class BatchDeleteRequest(BaseModel):
+    ids: list[int]
+# 批量删除学生
+@student_router.post("/student/batchDelete")
+async def batch_delete_students(req: BatchDeleteRequest):
+    ids = req.ids
+    if not ids:
+        raise HTTPException(status_code=400, detail="请选择要删除的学生")
+    
+    # 批量删除
+    await Student.filter(id__in=ids).delete()
+    return {"code": 200, "message": f"成功删除 {len(ids)} 条数据"}

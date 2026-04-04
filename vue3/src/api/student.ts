@@ -37,6 +37,15 @@ export function deleteStudentInfo(stu_id:string): Promise<any> {
     })
 }
 
+// 批量删除
+export const batchDeleteStudents = (data: { ids: number[] }) => {
+  return request({
+    url: '/student/batchDelete',
+    method: 'post',
+    data
+  })
+}
+
 // Excel 导出
 export const exportStudents = (params?: any) => {
   return request({

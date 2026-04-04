@@ -2,17 +2,26 @@
   <div>
     <h1 style="text-align: center;margin-bottom: 50; font-size: 28px;">学生信息管理页面（增删查改）</h1>
     <!-- 搜索框 + 导入导出按钮 -->
-    <div style="width: 70%;margin: 30px auto;">
-      <ProTable :columns="columns" :table-data="tableData" :loading="loading" @refresh="handleSearch">
+    <div style="width: 80%;margin: 30px auto;">
+      <ProTable :columns="columns" :table-data="tableData" :loading="loading"
+       @refresh="handleSearch" @selection-change="handleSelectionChange">
         <template #toolbar-left>
-          <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
             <el-input v-model="searchValue" placeholder="请输入学号/姓名" style="width: 300px;" />
-            <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button type="default" @click="handleReset">重置</el-button>
-            <el-button type="success" @click="handleAdd">新增</el-button>
-            <!-- 🔥 新增：Excel 导出按钮 -->
-            <el-button type="primary" icon="Download" @click="handleExport">导出 Excel</el-button>
-            <!-- 🔥 新增：Excel 导入按钮 -->
+            <el-button type="primary" @click="handleSearch" :icon="Search">搜索</el-button>
+            <el-button type="default" @click="handleReset" :icon="Refresh">重置</el-button>
+            <el-button type="success" @click="handleAdd" :icon="Plus">新增</el-button>
+            <!-- Excel 导出按钮 -->
+            <el-button type="primary" :icon="Download" @click="handleExport">导出 Excel</el-button>
+            <el-button
+              type="danger"
+              :icon="Delete"
+              @click="handleBatchDelete"
+              :disabled="selectedIds.length === 0"
+            >
+              批量删除
+            </el-button>
+            <!-- Excel 导入按钮 -->
             <el-upload
               class="upload-btn"
               action="#"
@@ -21,7 +30,7 @@
               :show-file-list="false"
               accept=".xlsx,.xls"
             >
-              <el-button type="warning" icon="Upload">导入 Excel</el-button>
+              <el-button type="warning" :icon="Upload">导入 Excel</el-button>
             </el-upload>
           </div>
         </template>
@@ -45,10 +54,11 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import { getStudentInfo, addStudentInfo, updateStudentInfo, 
-  deleteStudentInfo, exportStudents, importStudents  } from '@/api/student'
+  deleteStudentInfo, exportStudents, importStudents ,batchDeleteStudents  } from '@/api/student'
 import ProTable from '@/components/ProTable.vue'
 import FormDialog from '@/components/FormDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Download, Upload, Delete, Search, Refresh, Plus } from '@element-plus/icons-vue'
 
 type StudentQueryParams = {
   page: number,
@@ -57,6 +67,11 @@ type StudentQueryParams = {
 }
 
 const columns = [
+ { 
+    type: "selection",
+    width: 60,
+    align: "center"
+  },
   { type: 'index', width: 60, align: 'center' },
   { label: 'ID', prop: 'id' },
   { label: '学号', prop: 'no', width: 120 },
@@ -82,7 +97,7 @@ const tableData = ref<any[]>([])
 const loading = ref(false)
 const showDialog = ref(false)
 const formData = ref<any>({})
-// 🔥 新增：存储选中的导入文件
+// 存储选中的导入文件
 const selectedFile = ref<File | null>(null)
 
 const customRules = {
@@ -110,7 +125,12 @@ const formFields = [
   { label: '邮箱', prop: 'email', required: true },
   { label: '地址', prop: 'address' },
 ]
+// 多选事件
+const selectedIds = ref<number[]>([])
 
+const handleSelectionChange = (val: any[]) => {
+  selectedIds.value = val.map(item => item.id)
+}
 // 搜索
 const handleSearch = () => {
   fetchStudents({
@@ -196,7 +216,26 @@ const handleDelete = async (row: any) => {
     console.log(e)
   })
 }
+// 🔥 批量删除
+const handleBatchDelete = async () => {
+  if(selectedIds.value.length === 0){
+    ElMessage.warning('请选择要删除的学生')
+    return
+  }
 
+  ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 条数据吗？`, '批量删除', {
+    type: 'warning',
+    confirmButtonText: '确定删除',
+    cancelButtonText: '取消'
+  }).then(async () => {
+    const res:any = await batchDeleteStudents({ ids: selectedIds.value })
+    if(res.code === 200){
+      ElMessage.success('批量删除成功！')
+      selectedIds.value = []
+      fetchStudents()
+    }
+  }).catch(() => {})
+}
 // 获取学生列表
 const fetchStudents = async (query?: StudentQueryParams) => {
   loading.value = true;
@@ -259,14 +298,14 @@ const handleExport = async () => {
   }
 }
 
-// 🔥 新增：选择 Excel 文件
+// 选择 Excel 文件
 const handleFileChange = (file: any) => {
   selectedFile.value = file.raw
   // 选择文件后触发导入确认
   handleImport()
 }
 
-// 🔥 新增：Excel 导入功能
+// Excel 导入功能
 const handleImport = async () => {
   if (!selectedFile.value) {
     ElMessage.warning('请选择要导入的 Excel 文件（仅支持 .xlsx/.xls 格式）')
@@ -280,7 +319,7 @@ const handleImport = async () => {
       type: 'warning'
     }).then(async () => {
       loading.value = true
-      const res = await importStudents(selectedFile.value!)
+      const res:any = await importStudents(selectedFile.value!)
       if (res.code === 200) {
         ElMessage.success(res.message || 'Excel 导入成功！')
         // 导入成功后刷新列表
@@ -303,7 +342,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 🔥 新增：导入按钮样式适配 */
+/* 导入按钮样式适配 */
 .upload-btn {
   display: inline-block;
 }

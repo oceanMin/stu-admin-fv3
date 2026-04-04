@@ -80,7 +80,6 @@ const handleLogin = async () => {
         username: res.username
       });
       localStorage.setItem('userInfo', userInfo);
-      console.log(11111111,res,res)
       ElMessage.success(res.message || '登录成功');
       // 跳转到学生列表页
       await router.push('/');
