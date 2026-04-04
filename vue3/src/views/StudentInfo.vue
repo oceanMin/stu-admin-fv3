@@ -1,6 +1,11 @@
 <template>
   <div>
     <h1 style="text-align: center;margin-bottom: 50; font-size: 28px;">学生信息管理页面（增删查改）</h1>
+    <!-- 🔥 统计图表区域 -->
+    <div style="width: 90%;margin: 0 auto; display: flex; gap: 20px; margin: 20px auto;">
+      <div ref="chartCollegeRef" style="flex: 1; height: 320px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px #00000005;"></div>
+      <div ref="chartClazzRef" style="flex: 1; height: 320px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px #00000005;"></div>
+    </div>
     <!-- 搜索框 + 导入导出按钮 -->
     <div style="width: 80%;margin: 30px auto;">
       <ProTable :columns="columns" :table-data="tableData" :loading="loading"
@@ -52,13 +57,16 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { getStudentInfo, addStudentInfo, updateStudentInfo, 
-  deleteStudentInfo, exportStudents, importStudents ,batchDeleteStudents  } from '@/api/student'
+  deleteStudentInfo, exportStudents, importStudents ,batchDeleteStudents,  
+  getStatsByCollege,
+  getStatsByClazz} from '@/api/student'
 import ProTable from '@/components/ProTable.vue'
 import FormDialog from '@/components/FormDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Upload, Delete, Search, Refresh, Plus } from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
 
 type StudentQueryParams = {
   page: number,
@@ -127,6 +135,56 @@ const formFields = [
 ]
 // 多选事件
 const selectedIds = ref<number[]>([])
+
+// 图表
+const chartCollegeRef = ref(null)
+const chartClazzRef = ref(null)
+let collegeChart: any = null
+let clazzChart: any = null
+
+// ==================== 统计图表 ====================
+async function loadCharts() {
+  await nextTick()
+  collegeChart = echarts.init(chartCollegeRef.value)
+  clazzChart = echarts.init(chartClazzRef.value)
+
+  // 学院统计
+  const resCollege = await getStatsByCollege()
+  const collegeData = resCollege.data.map((item: any) => ({
+    name: item.college || '未知学院',
+    value: item.count
+  }))
+
+  collegeChart.setOption({
+    title: { text: '各学院人数统计', left: 'center' },
+    tooltip: { trigger: 'item' },
+    series: [{
+      name: '人数',
+      type: 'pie',
+      radius: ['40%', '70%'],
+      data: collegeData
+    }]
+  })
+
+  // 班级统计
+  const resClazz = await getStatsByClazz()
+  const clazzData = resClazz.data.map((item: any) => ({
+    name: item.clazz || '未知班级',
+    value: item.count
+  }))
+
+  clazzChart.setOption({
+    title: { text: '各班级人数统计', left: 'center' },
+    tooltip: { trigger: 'item' },
+    series: [{
+      name: '人数',
+      type: 'pie',
+      radius: ['40%', '70%'],
+      data: clazzData
+    }]
+  })
+}
+
 
 const handleSelectionChange = (val: any[]) => {
   selectedIds.value = val.map(item => item.id)
@@ -251,6 +309,7 @@ const fetchStudents = async (query?: StudentQueryParams) => {
         pageSize: data.pages?.size || 10,
         pageSizes: data.pages?.pages || 0
       };
+      loadCharts() // 🔥 删除后刷新图表
     } else {
       ElMessage.error(data?.message || "获取学生列表失败");
       tableData.value = []; // 失败时清空列表
@@ -260,6 +319,7 @@ const fetchStudents = async (query?: StudentQueryParams) => {
     console.error('获取学生列表失败:', error);
     ElMessage.error("网络异常或接口未响应，请检查后端服务");
     tableData.value = []; // 异常时清空列表
+    loadCharts() // 🔥 删除后刷新图表
   } finally {
     loading.value = false;
   }

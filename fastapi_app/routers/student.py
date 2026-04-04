@@ -9,6 +9,7 @@ from tortoise.expressions import Q
 from jose import JWTError, jwt
 from utils.utils import SECRET_KEY, ALGORITHM
 from utils.excel_utils import  import_students_from_excel
+from tortoise.functions import Count
 
 from models import Student, StudentResponse
 
@@ -245,3 +246,21 @@ async def batch_delete_students(req: BatchDeleteRequest):
     # 批量删除
     await Student.filter(id__in=ids).delete()
     return {"code": 200, "message": f"成功删除 {len(ids)} 条数据"}
+
+# ======================== 统计图表 ========================
+
+# 按学院统计人数
+@student_router.get("/student/stats/college")
+async def stats_by_college():
+    stats = await Student.annotate(
+        count=Count("id")
+    ).group_by("college").values("college", "count")
+    return {"code": 200, "data": stats}
+
+# 按班级统计人数
+@student_router.get("/student/stats/clazz")
+async def stats_by_clazz():
+    stats = await Student.annotate(
+        count=Count("id")
+    ).group_by("clazz").values("clazz", "count")
+    return {"code": 200, "data": stats}

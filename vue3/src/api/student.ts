@@ -67,3 +67,19 @@ export const importStudents = (file: File) => {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+// 统计：按学院
+export const getStatsByCollege = () => {
+  return request({
+    url: '/student/stats/college',
+    method: 'get'
+  })
+}
+
+// 统计：按班级
+export const getStatsByClazz = () => {
+  return request({
+    url: '/student/stats/clazz',
+    method: 'get'
+  })
+}
