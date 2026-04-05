@@ -35,7 +35,7 @@ async def get_current_user(token: str = Header(None)):
         )
 
 # Excel 导出接口
-@student_router.get("/student/export")
+@student_router.get("/export")
 async def export_students(search: str = None):
     try:
         query = Student.all()
@@ -78,13 +78,13 @@ async def export_students(search: str = None):
         raise HTTPException(status_code=500, detail=f"导出失败：{str(e)}")
 
 # 🔥 新增：Excel 导入接口
-@student_router.post("/student/import")
+@student_router.post("/import")
 async def import_students(file: UploadFile = File(...)):
     result = await import_students_from_excel(file)
     return result
 
 @student_router.get(
-    "/student/selectAll",
+    "/selectAll",
     summary="查询所有学生信息",
     description="获取系统中所有学生的信息列表，支持分页查询",
     response_description="返回学生信息列表及分页数据",
@@ -143,7 +143,7 @@ async def select_all(
 
 
 @student_router.get(
-    "/student/select/{student_id}",
+    "/select/{student_id}",
     summary="查询指定学生信息",
     description="根据ID查询指定学生的信息",
     response_description="返回学生信息",
@@ -165,7 +165,7 @@ async def select_one(student_id: int = Path(..., description="学生ID")):
 
 
 @student_router.post(
-    "/student/createStuInfo",
+    "/createStuInfo",
     summary="新增学生信息",
     description="创建新的学生信息",
     response_description="返回创建成功的学生信息",
@@ -185,7 +185,7 @@ async def createStuInfo(student: StudentResponse = Body(..., description="学生
 
 
 @student_router.post(
-    "/student/update",
+    "/update",
     summary="更新学生信息",
     description="根据ID更新指定学生的信息",
     response_description="返回更新成功后的学生信息",
@@ -214,7 +214,7 @@ async def update(student: StudentResponse = Body(..., description="学生信息"
 
 
 @student_router.delete(
-    "/student/delete/{student_id}",
+    "/delete/{student_id}",
     summary="删除学生信息",
     description="根据ID删除指定学生的信息",
     response_description="返回删除成功",
@@ -237,7 +237,7 @@ async def delete(student_id: int = Path(..., description="学生ID")):
 class BatchDeleteRequest(BaseModel):
     ids: list[int]
 # 批量删除学生
-@student_router.post("/student/batchDelete")
+@student_router.post("/batchDelete")
 async def batch_delete_students(req: BatchDeleteRequest):
     ids = req.ids
     if not ids:
@@ -250,7 +250,7 @@ async def batch_delete_students(req: BatchDeleteRequest):
 # ======================== 统计图表 ========================
 
 # 按学院统计人数
-@student_router.get("/student/stats/college")
+@student_router.get("/stats/college")
 async def stats_by_college():
     stats = await Student.annotate(
         count=Count("id")
@@ -258,7 +258,7 @@ async def stats_by_college():
     return {"code": 200, "data": stats}
 
 # 按班级统计人数
-@student_router.get("/student/stats/clazz")
+@student_router.get("/stats/clazz")
 async def stats_by_clazz():
     stats = await Student.annotate(
         count=Count("id")

@@ -27,7 +27,7 @@ app.add_middleware(
 API_PREFIX = "/api/v1"
 
 # 注册路由
-app.include_router(student_router, prefix=API_PREFIX)
+app.include_router(student_router, prefix=API_PREFIX+"/student")
 app.include_router(user_router, prefix=API_PREFIX)
 
 # 注册 Tortoise-ORM
