@@ -20,16 +20,19 @@
             <el-button type="primary" @click="handleSearch" :icon="Search">搜索</el-button>
             <el-button type="default" @click="handleReset" :icon="Refresh">重置</el-button>
             <el-button type="success" @click="handleAdd" :icon="Plus">新增</el-button>
-            <!-- Excel 导出按钮 -->
-            <el-button type="primary" :icon="Download" @click="handleExport">导出 Excel</el-button>
             <el-button type="danger" :icon="Delete" @click="handleBatchDelete" :disabled="selectedIds.length === 0">
               批量删除
             </el-button>
+            <!-- Excel 导出按钮 -->
+            <el-button type="primary" :icon="Download" @click="handleExport">导出 Excel</el-button>
             <!-- Excel 导入按钮 -->
             <el-upload class="upload-btn" action="#" :auto-upload="false" :on-change="handleFileChange"
               :show-file-list="false" accept=".xlsx,.xls">
               <el-button type="warning" :icon="Upload">导入 Excel</el-button>
             </el-upload>
+            <el-button type="default" @click="handleDownloadTemplate" :icon="Download">
+              导入模板
+            </el-button>
           </div>
         </template>
         <!-- 自定义操作列 -->
@@ -56,7 +59,8 @@ import {
   getStudentInfo, addStudentInfo, updateStudentInfo,
   deleteStudentInfo, exportStudents, importStudents, batchDeleteStudents,
   getStatsByCollege,
-  getStatsByClazz
+  getStatsByClazz,
+  downloadStudentTemplate
 } from '@/api/student'
 import ProTable from '@/components/ProTable.vue'
 import FormDialog from '@/components/FormDialog.vue'
@@ -368,6 +372,31 @@ const handleFileChange = (file: any) => {
   handleImport()
 }
 
+// 获取导入模板
+const handleDownloadTemplate = async () => {
+  try {
+    loading.value = true
+    const res = await downloadStudentTemplate()
+    
+    // 生成 Blob 对象，标准 Excel 格式
+    const blob = new Blob([res], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '学生信息导入模板.xlsx'
+    a.click()
+    window.URL.revokeObjectURL(url)
+    
+    ElMessage.success('模板下载成功！')
+    loading.value = false
+  } catch (error) {
+    loading.value = false
+    ElMessage.error('模板下载失败，请重试！')
+    console.error('模板下载错误:', error)
+  }
+}
 // Excel 导入功能
 const handleImport = async () => {
   if (!selectedFile.value) {

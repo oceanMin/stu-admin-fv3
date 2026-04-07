@@ -83,6 +83,36 @@ async def import_students(file: UploadFile = File(...)):
     result = await import_students_from_excel(file)
     return result
 
+# 下载模板接口
+@student_router.get("/template")
+async def download_template():
+    from io import BytesIO
+    import pandas as pd
+
+    # 1. 生成标准表头的空模板
+    columns = ["学号", "姓名", "班级", "专业", "学院", "手机号", "邮箱", "地址"]
+    df = pd.DataFrame(columns=columns)
+    
+    # 2. 写入 BytesIO，必须用 openpyxl 引擎
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="导入模板", index=False)
+    
+    # 3. 重置指针，关键！
+    output.seek(0)
+
+    # 4. 中文文件名编码，避免乱码
+    filename = quote("学生信息导入模板.xlsx")
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename*=utf-8''{filename}",
+            "Content-Length": str(output.getbuffer().nbytes)
+        }
+    )
+
+# 查询所有学生信息
 @student_router.get(
     "/selectAll",
     summary="查询所有学生信息",

@@ -68,6 +68,15 @@ export const importStudents = (file: File) => {
   })
 }
 
+// 下载导入模板
+export const downloadStudentTemplate = () => {
+  return request({
+    url: '/student/template',
+    method: 'get',
+    responseType: 'blob' // 关键：指定 blob 类型
+  })
+}
+
 // 统计：按学院
 export const getStatsByCollege = () => {
   return request({
