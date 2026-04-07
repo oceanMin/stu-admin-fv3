@@ -17,7 +17,7 @@ class User(models.Model):
 # 创建学生模型
 class Student(models.Model):
     id = fields.IntField(pk=True, generated=True, description="用户ID，主键")
-    no = fields.CharField(max_length=255, null=True)
+    no = fields.CharField(max_length=20, description="学号") 
     name = fields.CharField(max_length=255, null=True)
     clazz = fields.CharField(max_length=255, null=True)
     major = fields.CharField(max_length=255, null=True)
