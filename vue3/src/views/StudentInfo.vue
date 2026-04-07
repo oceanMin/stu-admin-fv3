@@ -3,13 +3,17 @@
     <h1 style="text-align: center;margin-bottom: 50; font-size: 28px;">学生信息管理页面（增删查改）</h1>
     <!-- 🔥 统计图表区域 -->
     <div style="width: 90%;margin: 0 auto; display: flex; gap: 20px; margin: 20px auto;">
-      <div ref="chartCollegeRef" style="flex: 1; height: 320px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px #00000005;"></div>
-      <div ref="chartClazzRef" style="flex: 1; height: 320px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px #00000005;"></div>
+      <div ref="chartCollegeRef"
+        style="flex: 1; height: 320px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px #00000005;">
+      </div>
+      <div ref="chartClazzRef"
+        style="flex: 1; height: 320px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px #00000005;">
+      </div>
     </div>
     <!-- 搜索框 + 导入导出按钮 -->
-    <div style="width: 80%;margin: 30px auto;">
-      <ProTable :columns="columns" :table-data="tableData" :loading="loading"
-       @refresh="handleSearch" @selection-change="handleSelectionChange">
+    <div style="width: 90%;margin: 30px auto;">
+      <ProTable :columns="columns" :table-data="tableData" :loading="loading" @refresh="handleSearch"
+        @selection-change="handleSelectionChange">
         <template #toolbar-left>
           <div style="display: flex; align-items: center; gap: 10px;">
             <el-input v-model="searchValue" placeholder="请输入学号/姓名" style="width: 300px;" />
@@ -18,29 +22,19 @@
             <el-button type="success" @click="handleAdd" :icon="Plus">新增</el-button>
             <!-- Excel 导出按钮 -->
             <el-button type="primary" :icon="Download" @click="handleExport">导出 Excel</el-button>
-            <el-button
-              type="danger"
-              :icon="Delete"
-              @click="handleBatchDelete"
-              :disabled="selectedIds.length === 0"
-            >
+            <el-button type="danger" :icon="Delete" @click="handleBatchDelete" :disabled="selectedIds.length === 0">
               批量删除
             </el-button>
             <!-- Excel 导入按钮 -->
-            <el-upload
-              class="upload-btn"
-              action="#"
-              :auto-upload="false"
-              :on-change="handleFileChange"
-              :show-file-list="false"
-              accept=".xlsx,.xls"
-            >
+            <el-upload class="upload-btn" action="#" :auto-upload="false" :on-change="handleFileChange"
+              :show-file-list="false" accept=".xlsx,.xls">
               <el-button type="warning" :icon="Upload">导入 Excel</el-button>
             </el-upload>
           </div>
         </template>
         <!-- 自定义操作列 -->
         <template #action="{ row }">
+          <el-button size="small" type="primary" @click="handleView(row)">查看</el-button>
           <el-button size="small" type="primary" @click="handleEdit(row)">编辑</el-button>
           <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
         </template>
@@ -48,7 +42,7 @@
       <div style="display: flex;justify-content: end; margin-top: 20px;">
         <el-pagination background layout="total,prev, pager, next" @current-change="handleCurrentChange"
           @size-change="handleSizeChange" :current-page="pagination.currentPage" :page-size="pagination.pageSize"
-          :total="pagination.total" ></el-pagination>
+          :total="pagination.total"></el-pagination>
       </div>
     </div>
     <FormDialog v-model:visible="showDialog" :title="dialogTitle" :fields="formFields" :initial-data="formData"
@@ -58,10 +52,12 @@
 
 <script lang="ts" setup>
 import { nextTick, onMounted, ref } from 'vue'
-import { getStudentInfo, addStudentInfo, updateStudentInfo, 
-  deleteStudentInfo, exportStudents, importStudents ,batchDeleteStudents,  
+import {
+  getStudentInfo, addStudentInfo, updateStudentInfo,
+  deleteStudentInfo, exportStudents, importStudents, batchDeleteStudents,
   getStatsByCollege,
-  getStatsByClazz} from '@/api/student'
+  getStatsByClazz
+} from '@/api/student'
 import ProTable from '@/components/ProTable.vue'
 import FormDialog from '@/components/FormDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -75,7 +71,7 @@ type StudentQueryParams = {
 }
 
 const columns = [
- { 
+  {
     type: "selection",
     width: 60,
     align: "center"
@@ -248,6 +244,13 @@ const handleAdd = () => {
   console.log('add')
 }
 
+// 获取学生信息
+const handleView = (row: any) => {
+  dialogTitle.value = '查看'
+  showDialog.value = true
+  formData.value = row
+}
+
 // 编辑学生信息
 const handleEdit = (row: any) => {
   dialogTitle.value = '编辑'
@@ -276,7 +279,7 @@ const handleDelete = async (row: any) => {
 }
 // 🔥 批量删除
 const handleBatchDelete = async () => {
-  if(selectedIds.value.length === 0){
+  if (selectedIds.value.length === 0) {
     ElMessage.warning('请选择要删除的学生')
     return
   }
@@ -286,13 +289,13 @@ const handleBatchDelete = async () => {
     confirmButtonText: '确定删除',
     cancelButtonText: '取消'
   }).then(async () => {
-    const res:any = await batchDeleteStudents({ ids: selectedIds.value })
-    if(res.code === 200){
+    const res: any = await batchDeleteStudents({ ids: selectedIds.value })
+    if (res.code === 200) {
       ElMessage.success('批量删除成功！')
       selectedIds.value = []
       fetchStudents()
     }
-  }).catch(() => {})
+  }).catch(() => { })
 }
 // 获取学生列表
 const fetchStudents = async (query?: StudentQueryParams) => {
@@ -336,7 +339,7 @@ const handleExport = async () => {
       loading.value = true
 
       // 🔥 关键：把当前搜索值一起传给后端
-      const res:any = await exportStudents({
+      const res: any = await exportStudents({
         search: searchValue.value
       })
 
@@ -379,7 +382,7 @@ const handleImport = async () => {
       type: 'warning'
     }).then(async () => {
       loading.value = true
-      const res:any = await importStudents(selectedFile.value!)
+      const res: any = await importStudents(selectedFile.value!)
       if (res.code === 200) {
         ElMessage.success(res.message || 'Excel 导入成功！')
         // 导入成功后刷新列表
