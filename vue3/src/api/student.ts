@@ -77,6 +77,13 @@ export const downloadStudentTemplate = () => {
   })
 }
 
+export const getStatistics = () => {
+  return request({
+    url: '/student/statistics',
+    method: 'get'
+  })
+}
+
 // 统计：按学院
 export const getStatsByCollege = () => {
   return request({

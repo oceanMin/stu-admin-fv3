@@ -1,6 +1,23 @@
 <template>
-  <div>
-    <h1 style="text-align: center;margin-bottom: 50; font-size: 28px;">学生信息管理页面（增删查改）</h1>
+  <div class="student-admin-container">
+    <h1 style="text-align: center;margin-bottom: 50px; font-size: 28px;">学生信息管理页面（增删查改）</h1>
+    <!-- 顶部统计区 -->
+    <div class="statistics-card">
+      <div style="display: flex;gap:20px; margin-bottom:20px; padding:0 20px;">
+        <el-card style="flex:1">
+          <div>总学生：{{ total }}</div>
+        </el-card>
+        <el-card style="flex:1">
+          <div>班级数：{{ clazzCount }}</div>
+        </el-card>
+        <el-card style="flex:1">
+          <div>专业数：{{ majorCount }}</div>
+        </el-card>
+        <el-card style="flex:1">
+          <div>学院数：{{ collegeCount }}</div>
+        </el-card>
+      </div>
+    </div>
     <!-- 🔥 统计图表区域 -->
     <div style="width: 90%;margin: 0 auto; display: flex; gap: 20px; margin: 20px auto;">
       <div ref="chartCollegeRef"
@@ -60,7 +77,8 @@ import {
   deleteStudentInfo, exportStudents, importStudents, batchDeleteStudents,
   getStatsByCollege,
   getStatsByClazz,
-  downloadStudentTemplate
+  downloadStudentTemplate,
+  getStatistics
 } from '@/api/student'
 import ProTable from '@/components/ProTable.vue'
 import FormDialog from '@/components/FormDialog.vue'
@@ -142,6 +160,26 @@ const chartClazzRef = ref(null)
 let collegeChart: any = null
 let clazzChart: any = null
 
+const total = ref(0)
+const collegeCount = ref(0)
+const clazzCount = ref(0)
+const majorCount = ref(0)
+const loadStatistics = async () => {
+  const res = await getStatistics()
+  total.value = res.data.total
+  collegeCount.value = res.data.collegeCount
+  clazzCount.value = res.data.clazzCount
+  majorCount.value = res.data.majorCount
+
+  const myChart = echarts.init(document.getElementById('collegeChart'))
+  myChart.setOption({
+    title: { text: '学院人数分布' },
+    series: [{
+      type: 'pie',
+      data: res.data.collegeChart
+    }]
+  })
+}
 // ==================== 统计图表 ====================
 async function loadCharts() {
   await nextTick()
@@ -191,6 +229,7 @@ const handleSelectionChange = (val: any[]) => {
 }
 // 搜索
 const handleSearch = () => {
+  loadStatistics()
   fetchStudents({
     page: pagination.value.currentPage,
     size: pagination.value.pageSize,
@@ -377,7 +416,7 @@ const handleDownloadTemplate = async () => {
   try {
     loading.value = true
     const res = await downloadStudentTemplate()
-    
+
     // 生成 Blob 对象，标准 Excel 格式
     const blob = new Blob([res], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -388,7 +427,7 @@ const handleDownloadTemplate = async () => {
     a.download = '学生信息导入模板.xlsx'
     a.click()
     window.URL.revokeObjectURL(url)
-    
+
     ElMessage.success('模板下载成功！')
     loading.value = false
   } catch (error) {
@@ -430,12 +469,146 @@ const handleImport = async () => {
 
 onMounted(() => {
   fetchStudents()
+  loadStatistics() // 🔥 页面加载时加载统计图表
 })
 </script>
 
 <style scoped>
-/* 导入按钮样式适配 */
-.upload-btn {
+/* 🔥 全局容器：保证最大宽度、居中、上下留白 */
+.student-admin-container {
+  padding: 20px 30px;
+  background-color: #f5f7fa;
+  min-height: 100vh;
+}
+
+/* 🔥 顶部统计算区：卡片 + 环形图 */
+.statistics-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+/* 🔥 统汁卡片数字样式 */
+.stat-number {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* 🔥 图表容器 */
+.chart-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 🔥 按钮工具栏 */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* 🔥 整个表格区域外包 */
+.table-wrapper {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 16px;
+}
+
+/* 🔥 表格样式优化 */
+:deep(.el-table) {
+  --el-table-border-color: #e5e7eb;
+  --el-table-row-hover-bg-color: #f9fafb;
+  font-size: 14px;
+}
+
+:deep(.el-table__header-wrapper th) {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #374151;
+}
+
+:deep(.el-table__body td) {
+  padding: 12px 0;
+}
+
+/* 🔥 操作按钮统一大小 */
+:deep(.el-button--small) {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+/* 🔥 按钮颜色美化 */
+.btn-view {
+  background-color: #409eff;
+  border-color: #409eff;
+}
+
+.btn-edit {
+  background-color: #67c23a;
+  border-color: #67c23a;
+}
+
+.btn-delete {
+  background-color: #f56c6c;
+  border-color: #f56c6c;
+}
+
+/* 🔥 弹窗详情样式 */
+.detail-content {
+  padding: 10px 20px;
+  line-height: 2.2;
+  font-size: 14px;
+}
+
+.detail-content span {
+  color: #1f2937;
+  font-weight: 600;
   display: inline-block;
+  width: 85px;
+}
+
+/* 🔥 导入/导出按钮配色 */
+.import-btn {
+  background-color: #e6a23c !important;
+  border-color: #e6a23c !important;
+}
+
+.template-btn {
+  background-color: #909399 !important;
+  border-color: #909399 !important;
+}
+
+.export-btn {
+  background-color: #409eff !important;
+  border-color: #409eff !important;
+}
+
+.batch-btn {
+  background-color: #f56c6c !important;
+  border-color: #f56c6c !important;
+}
+
+/* 🔥 分页组件美化 */
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

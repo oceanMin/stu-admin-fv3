@@ -294,3 +294,28 @@ async def stats_by_clazz():
         count=Count("id")
     ).group_by("clazz").values("clazz", "count")
     return {"code": 200, "data": stats}
+
+
+# 获取统计数据
+@student_router.get("/statistics")
+async def get_statistics():
+    total = await Student.all().count()
+    colleges = await Student.all().distinct().values("college")
+    clazzes = await Student.all().distinct().values("clazz")
+    majors = await Student.all().distinct().values("major")
+
+    college_data = []
+    for c in colleges:
+        count = await Student.filter(college=c["college"]).count()
+        college_data.append({"name": c["college"], "value": count})
+
+    return {
+        "code":200,
+        "data": {
+            "total": total,
+            "collegeCount": len(colleges),
+            "clazzCount": len(clazzes),
+            "majorCount": len(majors),
+            "collegeChart": college_data
+        }
+    }
